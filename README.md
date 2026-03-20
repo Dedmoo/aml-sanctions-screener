@@ -35,3 +35,8 @@ curl -s -X POST http://localhost:8085/api/aml/screen \
 ## License
 
 [MIT](LICENSE)
+
+## Notes
+
+Demo watchlist entries are fictional and not a live sanctions feed.
+
