@@ -26,19 +26,40 @@ public class SanctionsScreeningService {
             throw new IllegalArgumentException("Name is required.");
         }
         String query = normalize(rawName);
+        if (query.length() < 3) {
+            throw new IllegalArgumentException("Name must be at least 3 characters after normalization.");
+        }
+
         List<Hit> hits = new ArrayList<>();
         for (WatchEntry entry : watchlist) {
             String candidate = normalize(entry.name());
             int distance = levenshtein(query, candidate);
             int maxLen = Math.max(query.length(), candidate.length());
             double similarity = maxLen == 0 ? 1.0 : 1.0 - ((double) distance / maxLen);
-            if (similarity >= 0.72 || query.contains(candidate) || candidate.contains(query)) {
-                hits.add(new Hit(entry.id(), entry.name(), entry.listType(), distance, round(similarity)));
+
+            boolean strongContains = (query.length() >= 5 && candidate.contains(query))
+                    || (candidate.length() >= 5 && query.contains(candidate));
+            if (similarity >= 0.72 || strongContains) {
+                double score = Math.max(similarity, strongContains ? 0.80 : 0.0);
+                if ("SANCTIONS".equals(entry.listType())) {
+                    score = Math.min(1.0, score + 0.05);
+                }
+                hits.add(new Hit(entry.id(), entry.name(), entry.listType(), distance, round(score)));
             }
         }
         hits.sort((a, b) -> Double.compare(b.score(), a.score()));
+
         int risk = hits.isEmpty() ? 0 : (int) Math.min(100, Math.round(hits.get(0).score() * 100));
-        String decision = risk >= 85 ? "BLOCK" : risk >= 72 ? "REVIEW" : "CLEAR";
+        // Any watchlist hit must at least go to REVIEW; never CLEAR with hits.
+        String decision;
+        if (hits.isEmpty()) {
+            decision = "CLEAR";
+        } else if (risk >= 85) {
+            decision = "BLOCK";
+        } else {
+            decision = "REVIEW";
+            risk = Math.max(risk, 72);
+        }
         return new ScreenResult(rawName.trim(), decision, risk, hits);
     }
 
