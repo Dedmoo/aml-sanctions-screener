@@ -111,5 +111,3 @@ HTTP: `http://localhost:8085`
 ## License
 
 [MIT](LICENSE)
-
-<!-- docs: maintenance pass 2026-06-08 -->
