@@ -49,6 +49,56 @@ flowchart TD
 }
 ```
 
+## Domain model
+
+Class-level view of the main types and how they relate (fields, operations and dependencies).
+
+```mermaid
+classDiagram
+    direction TB
+    class AmlController {
+        <<controller>>
+        -service: SanctionsScreeningService
+        +screen(request) ScreenResult
+    }
+    class SanctionsScreeningService {
+        <<service>>
+        -watchlist: List~WatchEntry~
+        +screen(name) ScreenResult
+        +levenshtein(a, b) int
+    }
+    class ScreenRequest {
+        <<record>>
+        +name: String
+    }
+    class WatchEntry {
+        <<record>>
+        +id: String
+        +name: String
+        +listType: String
+    }
+    class Hit {
+        <<record>>
+        +watchlistId: String
+        +matchedName: String
+        +listType: String
+        +distance: int
+        +score: double
+    }
+    class ScreenResult {
+        <<record>>
+        +query: String
+        +decision: String
+        +riskScore: int
+        +hits: List~Hit~
+    }
+    AmlController --> SanctionsScreeningService
+    AmlController ..> ScreenRequest
+    SanctionsScreeningService o-- WatchEntry
+    SanctionsScreeningService ..> ScreenResult
+    ScreenResult o-- Hit
+```
+
 ## Quick start
 
 ```bash
